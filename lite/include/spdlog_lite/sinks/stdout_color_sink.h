@@ -12,10 +12,44 @@
 #include <string>
 #include <string_view>
 
+#ifdef _WIN32
+#include <io.h>
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
+
 #include "../details/log_msg.h"
 #include "../details/null_mutex.h"
 
 namespace spdlog_lite::sinks {
+
+namespace detail {
+#ifdef _WIN32
+inline void enable_ansi_colors() {
+    static bool done = false;
+    if (done) return;
+    done = true;
+    auto handle = ::GetStdHandle(STD_OUTPUT_HANDLE);
+    if (handle != INVALID_HANDLE_VALUE) {
+        DWORD mode = 0;
+        if (::GetConsoleMode(handle, &mode)) {
+            ::SetConsoleMode(handle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+        }
+    }
+    handle = ::GetStdHandle(STD_ERROR_HANDLE);
+    if (handle != INVALID_HANDLE_VALUE) {
+        DWORD mode = 0;
+        if (::GetConsoleMode(handle, &mode)) {
+            ::SetConsoleMode(handle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+        }
+    }
+}
+#else
+inline void enable_ansi_colors() {}
+#endif
+}  // namespace detail
 
 namespace ansi_color {
 constexpr std::string_view reset = "\033[m";
@@ -33,6 +67,7 @@ public:
     explicit ansicolor_sink(Stream &stream)
         : mutex_(std::make_unique<Mutex>()),
           stream_(stream) {
+        detail::enable_ansi_colors();
         colors_[static_cast<std::size_t>(level::trace)] = ansi_color::white;
         colors_[static_cast<std::size_t>(level::debug)] = ansi_color::cyan;
         colors_[static_cast<std::size_t>(level::info)] = ansi_color::green;
@@ -49,9 +84,16 @@ public:
         auto color = colors_[static_cast<std::size_t>(msg.log_level)];
         auto level_name = to_string_view(msg.log_level);
 
-        // Format: [timestamp] [name] [COLOR level RESET] payload\n
-        std::format_to(std::back_inserter(buf_), "[{:%Y-%m-%d %H:%M:%S}] [{}] [{}{}{}] {}\n",
-                       tp, msg.logger_name, color, level_name, ansi_color::reset, msg.payload);
+        // Write prefix: [timestamp] [name] [
+        std::format_to(std::back_inserter(buf_), "[{:%Y-%m-%d %H:%M:%S}] [{}] [", tp, msg.logger_name);
+        stream_.write(buf_.data(), static_cast<std::streamsize>(buf_.size()));
+
+        // Write colored level
+        stream_ << color << level_name << ansi_color::reset;
+
+        // Write suffix: ] payload\n
+        buf_.clear();
+        std::format_to(std::back_inserter(buf_), "] {}\n", msg.payload);
         stream_.write(buf_.data(), static_cast<std::streamsize>(buf_.size()));
     }
 
