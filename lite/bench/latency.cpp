@@ -82,7 +82,7 @@ static void bench_basic_file_mt(benchmark::State &state) {
 
 // Bench color stdout sink (single-threaded)
 static void bench_color_sink_st(benchmark::State &state) {
-    logger<sinks::stdout_color_sink_st> log("bench", sinks::stdout_color_sink_st(std::cout));
+    logger<sinks::stdout_color_sink_st> log("bench");
     int i = 0;
     for (auto _ : state) {
         log.info("Hello logger: msg number {}...............", ++i);
@@ -91,7 +91,7 @@ static void bench_color_sink_st(benchmark::State &state) {
 
 // Bench color stdout sink (multi-threaded)
 static void bench_color_sink_mt(benchmark::State &state) {
-    static logger<sinks::stdout_color_sink_mt> log("bench", sinks::stdout_color_sink_mt(std::cout));
+    static logger<sinks::stdout_color_sink_mt> log("bench");
     int i = 0;
     for (auto _ : state) {
         log.info("Hello logger: msg number {}...............", ++i);

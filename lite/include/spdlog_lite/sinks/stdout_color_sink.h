@@ -5,8 +5,8 @@
 
 #include <array>
 #include <chrono>
+#include <cstdio>
 #include <format>
-#include <iostream>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -61,12 +61,12 @@ constexpr std::string_view red_bold = "\033[31m\033[1m";
 constexpr std::string_view bold_on_red = "\033[1m\033[41m";
 }  // namespace ansi_color
 
-template <typename Mutex, typename Stream>
+template <typename Mutex>
 class ansicolor_sink {
 public:
-    explicit ansicolor_sink(Stream &stream)
+    explicit ansicolor_sink(std::FILE *file = stdout)
         : mutex_(std::make_unique<Mutex>()),
-          stream_(stream) {
+          file_(file) {
         detail::enable_ansi_colors();
         colors_[static_cast<std::size_t>(level::trace)] = ansi_color::white;
         colors_[static_cast<std::size_t>(level::debug)] = ansi_color::cyan;
@@ -84,18 +84,18 @@ public:
         auto color = colors_[static_cast<std::size_t>(msg.log_level)];
         auto level_name = to_string_view(msg.log_level);
 
-        // Build entire line in buffer, then single write
+        // Build entire line in buffer, then single fwrite
         std::format_to(std::back_inserter(buf_), "[{:%Y-%m-%d %H:%M:%S}] [{}] [", tp, msg.logger_name);
         buf_.append(color);
         buf_.append(level_name);
         buf_.append(ansi_color::reset);
         std::format_to(std::back_inserter(buf_), "] {}\n", msg.payload);
-        stream_.write(buf_.data(), static_cast<std::streamsize>(buf_.size()));
+        std::fwrite(buf_.data(), 1, buf_.size(), file_);
     }
 
     void flush() {
         std::lock_guard<Mutex> lock(*mutex_);
-        stream_.flush();
+        std::fflush(file_);
     }
 
     void set_color(level lvl, std::string_view color) {
@@ -104,18 +104,22 @@ public:
 
 private:
     std::unique_ptr<Mutex> mutex_;
-    Stream &stream_;
+    std::FILE *file_;
     std::string buf_;
     std::array<std::string_view, levels_count> colors_{};
 };
 
-using stdout_color_sink_mt = ansicolor_sink<std::mutex, decltype(std::cout)>;
-using stdout_color_sink_st = ansicolor_sink<details::null_mutex, decltype(std::cout)>;
-using stderr_color_sink_mt = ansicolor_sink<std::mutex, decltype(std::cerr)>;
-using stderr_color_sink_st = ansicolor_sink<details::null_mutex, decltype(std::cerr)>;
-
-// Helper to create with default stream
-inline auto make_stdout_color_sink_mt() { return stdout_color_sink_mt(std::cout); }
-inline auto make_stderr_color_sink_mt() { return stderr_color_sink_mt(std::cerr); }
+struct stdout_color_sink_mt : ansicolor_sink<std::mutex> {
+    stdout_color_sink_mt() : ansicolor_sink(stdout) {}
+};
+struct stdout_color_sink_st : ansicolor_sink<details::null_mutex> {
+    stdout_color_sink_st() : ansicolor_sink(stdout) {}
+};
+struct stderr_color_sink_mt : ansicolor_sink<std::mutex> {
+    stderr_color_sink_mt() : ansicolor_sink(stderr) {}
+};
+struct stderr_color_sink_st : ansicolor_sink<details::null_mutex> {
+    stderr_color_sink_st() : ansicolor_sink(stderr) {}
+};
 
 }  // namespace spdlog_lite::sinks
