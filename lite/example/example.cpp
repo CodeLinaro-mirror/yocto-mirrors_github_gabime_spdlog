@@ -2,19 +2,25 @@
 
 #include "spdlog_lite/logger.h"
 #include "spdlog_lite/sinks/basic_file_sink.h"
+#include "spdlog_lite/sinks/stdout_color_sink.h"
 #include "spdlog_lite/sinks/stdout_sink.h"
 
 int main() {
     using namespace spdlog_lite;
 
-    // Single sink — stdout
-    logger<sinks::stdout_sink_mt> console("app");
+    // Color console sink
+    logger<sinks::stdout_color_sink_mt> console("app");
     console.info("Hello {}", "world");
     console.info("Value: {}", 42);
     console.debug("This should not appear (level is info)");
 
     console.set_level(level::trace);
-    console.trace("Now trace is visible");
+    console.trace("Trace message");
+    console.debug("Debug message");
+    console.info("Info message");
+    console.warn("Warning message");
+    console.error("Error message");
+    console.critical("Critical message");
 
     // File sink
     logger<sinks::basic_file_sink_mt> file_logger("file", sinks::basic_file_sink_mt{"logs/example.txt", true});
