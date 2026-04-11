@@ -9,7 +9,7 @@ int main() {
     using namespace spdlog_lite;
 
     // Color console sink
-    logger<sinks::stdout_color_sink_mt> console("app");
+    logger<sinks::stdout_color_sink_mt> console("app", sinks::stdout_color_sink_mt(std::cout));
     console.info("Hello {}", "world");
     console.info("Value: {}", 42);
     console.debug("This should not appear (level is info)");
