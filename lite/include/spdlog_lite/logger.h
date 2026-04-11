@@ -84,7 +84,7 @@ private:
     void log_(level lvl, string_view_t msg) noexcept {
         if (!should_log(lvl)) return;
         details::log_msg log_msg(name_, lvl, msg);
-        sink_it_(log_msg);
+        dispatch_(log_msg);
     }
 
     template <typename... Args>
@@ -93,13 +93,13 @@ private:
         try {
             auto formatted = std::format(fmt, std::forward<Args>(args)...);
             details::log_msg log_msg(name_, lvl, formatted);
-            sink_it_(log_msg);
+            dispatch_(log_msg);
         } catch (...) {
             // swallow formatting errors
         }
     }
 
-    void sink_it_(const details::log_msg &msg) noexcept {
+    void dispatch_(const details::log_msg &msg) noexcept {
         try {
             std::apply([&msg](auto &...s) { (s.log(msg), ...); }, sinks_);
         } catch (...) {
