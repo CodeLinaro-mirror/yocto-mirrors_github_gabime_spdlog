@@ -11,6 +11,7 @@
 #include "spdlog_lite/logger.h"
 #include "spdlog_lite/sinks/basic_file_sink.h"
 #include "spdlog_lite/sinks/null_sink.h"
+#include "spdlog_lite/sinks/stdout_color_sink.h"
 
 using namespace spdlog_lite;
 
@@ -79,6 +80,24 @@ static void bench_basic_file_mt(benchmark::State &state) {
     }
 }
 
+// Bench color stdout sink (single-threaded)
+static void bench_color_sink_st(benchmark::State &state) {
+    logger<sinks::stdout_color_sink_st> log("bench", sinks::stdout_color_sink_st(std::cout));
+    int i = 0;
+    for (auto _ : state) {
+        log.info("Hello logger: msg number {}...............", ++i);
+    }
+}
+
+// Bench color stdout sink (multi-threaded)
+static void bench_color_sink_mt(benchmark::State &state) {
+    static logger<sinks::stdout_color_sink_mt> log("bench", sinks::stdout_color_sink_mt(std::cout));
+    int i = 0;
+    for (auto _ : state) {
+        log.info("Hello logger: msg number {}...............", ++i);
+    }
+}
+
 int main(int argc, char *argv[]) {
     int n_threads = benchmark::CPUInfo::Get().num_cpus;
 
@@ -87,9 +106,11 @@ int main(int argc, char *argv[]) {
     benchmark::RegisterBenchmark("disabled-at-runtime", bench_disabled_runtime);
     benchmark::RegisterBenchmark("null_sink_st (500_bytes c_str)", bench_null_sink_c_string);
     benchmark::RegisterBenchmark("null_sink_st", bench_null_sink_formatted);
+    benchmark::RegisterBenchmark("color_sink_st", bench_color_sink_st)->UseRealTime();
 
     if (full_bench) {
         benchmark::RegisterBenchmark("null_sink_mt", bench_null_sink_mt)->Threads(n_threads)->UseRealTime();
+        benchmark::RegisterBenchmark("color_sink_mt", bench_color_sink_mt)->Threads(n_threads)->UseRealTime();
         benchmark::RegisterBenchmark("basic_file_st", bench_basic_file_st)->UseRealTime();
         benchmark::RegisterBenchmark("basic_file_mt", bench_basic_file_mt)->Threads(n_threads)->UseRealTime();
     }

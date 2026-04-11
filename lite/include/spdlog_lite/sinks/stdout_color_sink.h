@@ -84,15 +84,11 @@ public:
         auto color = colors_[static_cast<std::size_t>(msg.log_level)];
         auto level_name = to_string_view(msg.log_level);
 
-        // Write prefix: [timestamp] [name] [
+        // Build entire line in buffer, then single write
         std::format_to(std::back_inserter(buf_), "[{:%Y-%m-%d %H:%M:%S}] [{}] [", tp, msg.logger_name);
-        stream_.write(buf_.data(), static_cast<std::streamsize>(buf_.size()));
-
-        // Write colored level
-        stream_ << color << level_name << ansi_color::reset;
-
-        // Write suffix: ] payload\n
-        buf_.clear();
+        buf_.append(color);
+        buf_.append(level_name);
+        buf_.append(ansi_color::reset);
         std::format_to(std::back_inserter(buf_), "] {}\n", msg.payload);
         stream_.write(buf_.data(), static_cast<std::streamsize>(buf_.size()));
     }
