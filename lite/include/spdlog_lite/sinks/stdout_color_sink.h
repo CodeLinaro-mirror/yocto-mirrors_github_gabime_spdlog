@@ -22,9 +22,9 @@ constexpr std::string_view reset = "\033[m";
 constexpr std::string_view white = "\033[37m";
 constexpr std::string_view cyan = "\033[36m";
 constexpr std::string_view green = "\033[32m";
-constexpr std::string_view bold_yellow = "\033[1m\033[33m";
-constexpr std::string_view bold_red = "\033[1m\033[31m";
-constexpr std::string_view bold_red_on_white = "\033[1m\033[31m\033[47m";
+constexpr std::string_view yellow_bold = "\033[33m\033[1m";
+constexpr std::string_view red_bold = "\033[31m\033[1m";
+constexpr std::string_view bold_on_red = "\033[1m\033[41m";
 }  // namespace ansi_color
 
 template <typename Mutex, typename Stream>
@@ -36,9 +36,9 @@ public:
         colors_[static_cast<std::size_t>(level::trace)] = ansi_color::white;
         colors_[static_cast<std::size_t>(level::debug)] = ansi_color::cyan;
         colors_[static_cast<std::size_t>(level::info)] = ansi_color::green;
-        colors_[static_cast<std::size_t>(level::warn)] = ansi_color::bold_yellow;
-        colors_[static_cast<std::size_t>(level::err)] = ansi_color::bold_red;
-        colors_[static_cast<std::size_t>(level::critical)] = ansi_color::bold_red_on_white;
+        colors_[static_cast<std::size_t>(level::warn)] = ansi_color::yellow_bold;
+        colors_[static_cast<std::size_t>(level::err)] = ansi_color::red_bold;
+        colors_[static_cast<std::size_t>(level::critical)] = ansi_color::bold_on_red;
         colors_[static_cast<std::size_t>(level::off)] = ansi_color::reset;
     }
 
